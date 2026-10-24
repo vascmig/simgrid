@@ -158,6 +158,8 @@ public:
   void set_carbon_intensity(double new_intensity);
   double get_host_water_intensity();
   void set_water_intensity(double new_intensity);
+  double get_host_water_stress_factor();  
+  void set_water_stress_factor(double new_stress_factor);  
   double get_last_update_time() const { return last_updated_; }
   void set_pue(double new_pue);
   double get_pue() const { return pue_; }
@@ -183,6 +185,8 @@ private:
   
   double carbon_intensity_ = 0.0; /* Current weighted carbon intensity of the energy mix (g CO2/kWh) */
   double water_intensity_ = 0.0; /* Current weighted water intensity of the energy mix (L/kWh) */
+
+  double water_stress_factor_ = 0.0; /* Represents the availability of fresh water related to the demand in the region. Higher values indicates regions that are more scarce. */
 
   void ensure_up_to_date();
 };
@@ -230,6 +234,10 @@ HostEnvironmentalFootprint::HostEnvironmentalFootprint(simgrid::s4u::Host* ptr) 
   const char* raw_water_intensity = host_->get_property("water_intensity");
   if (raw_water_intensity != nullptr)
     this->water_intensity_ = std::stod(raw_water_intensity);
+
+  const char* raw_water_stress_factor = host_->get_property("water_stress_factor");
+  if (raw_water_stress_factor != nullptr)
+    this->water_stress_factor_ = std::stod(raw_water_stress_factor);
   
   const char* raw_pue = host_->get_property("pue");
   if (raw_pue != nullptr)
@@ -260,7 +268,7 @@ double HostEnvironmentalFootprint::get_host_carbon_footprint()
 double HostEnvironmentalFootprint::get_host_water_footprint()
 {
   this->ensure_up_to_date();
-  return this->total_water_footprint_;
+  return this->total_water_footprint_ * (1 + this->water_stress_factor_);
 }
 
 double HostEnvironmentalFootprint::get_carbon_operational()
@@ -323,6 +331,19 @@ void HostEnvironmentalFootprint::set_water_intensity(double new_intensity)
 {
   this->ensure_up_to_date();
   this->water_intensity_ = new_intensity;
+}
+
+
+double HostEnvironmentalFootprint::get_host_water_stress_factor() 
+{
+  this->ensure_up_to_date();
+  return this->water_stress_factor_;
+}
+
+void HostEnvironmentalFootprint::set_water_stress_factor(double new_stress_factor)
+{
+  this->ensure_up_to_date();
+  this->water_stress_factor_ = new_stress_factor;
 }
 
 void HostEnvironmentalFootprint::set_wue(double new_wue)
